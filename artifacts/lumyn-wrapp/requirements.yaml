@@ -1,0 +1,25 @@
+packages:
+  "framer-motion": "For page transitions, hero animations, and smooth interactive reveals"
+  "@clerk/clerk-react": "Authentication provider as requested"
+  "react-hook-form": "For robust conversion form and validation"
+  "@hookform/resolvers": "Zod resolver for the form"
+  "date-fns": "For formatting timestamps on conversions and subscriptions"
+  "clsx": "Utility for constructing className strings conditionally"
+  "tailwind-merge": "Utility for merging tailwind classes safely"
+
+images:
+  - path: "artifacts/lumyn-wrapp/public/images/hero-bg.png"
+    description: "Abstract glowing neon cyan and deep indigo mesh gradient background, sleek dark mode tech aesthetic, premium saas feel"
+    aspect_ratio: "16:9"
+  - path: "artifacts/lumyn-wrapp/public/images/logo.png"
+    description: "Minimalist glowing neon cyan geometric monogram logo 'LW' for Lumyn Wrapp on transparent background, sleek tech startup vibe"
+    aspect_ratio: "1:1"
+  - path: "artifacts/lumyn-wrapp/public/images/mockup.png"
+    description: "Sleek modern smartphone mockup showing a beautiful mobile app interface, floating in 3D space with subtle glowing cyan accents"
+    aspect_ratio: "4:3"
+
+notes:
+  - Uses Clerk for authentication (VITE_CLERK_PUBLISHABLE_KEY required)
+  - Uses @workspace/api-client-react for TanStack Query API hooks
+  - Custom wrappers built in hooks/ to inject Clerk auth tokens
+  - Dark mode professional aesthetic applied globally via index.css

@@ -1,0 +1,532 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: Lumyn Wrapp API - Web to APK conversion SaaS
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: users
+    description: User operations
+  - name: subscriptions
+    description: Subscription and billing operations
+  - name: conversions
+    description: Web-to-APK conversion operations
+  - name: plans
+    description: Subscription plan operations
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /users/me:
+    get:
+      operationId: getCurrentUser
+      tags: [users]
+      summary: Get current authenticated user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/sync:
+    post:
+      operationId: syncUser
+      tags: [users]
+      summary: Sync user from Clerk (called after sign-in)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SyncUserRequest"
+      responses:
+        "200":
+          description: User synced
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /plans:
+    get:
+      operationId: listPlans
+      tags: [plans]
+      summary: List available subscription plans
+      responses:
+        "200":
+          description: List of plans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Plan"
+
+  /subscriptions/me:
+    get:
+      operationId: getMySubscription
+      tags: [subscriptions]
+      summary: Get current user's active subscription
+      responses:
+        "200":
+          description: Active subscription or null
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /subscriptions/checkout:
+    post:
+      operationId: createCheckout
+      tags: [subscriptions]
+      summary: Initiate PesaPal checkout for a subscription plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutRequest"
+      responses:
+        "200":
+          description: Checkout URL to redirect user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /subscriptions/callback:
+    get:
+      operationId: subscriptionCallback
+      tags: [subscriptions]
+      summary: PesaPal payment callback
+      parameters:
+        - name: OrderTrackingId
+          in: query
+          schema:
+            type: string
+        - name: OrderMerchantReference
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Callback processed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CallbackResponse"
+
+  /conversions:
+    get:
+      operationId: listConversions
+      tags: [conversions]
+      summary: List all conversion jobs for current user
+      responses:
+        "200":
+          description: List of conversion jobs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ConversionJob"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: createConversion
+      tags: [conversions]
+      summary: Create a new Web-to-APK conversion job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateConversionRequest"
+      responses:
+        "201":
+          description: Conversion job created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversionJob"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Subscription limit reached
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /conversions/{id}:
+    get:
+      operationId: getConversion
+      tags: [conversions]
+      summary: Get a specific conversion job
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Conversion job
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversionJob"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /conversions/{id}/status:
+    get:
+      operationId: getConversionStatus
+      tags: [conversions]
+      summary: Poll status of a conversion job
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Conversion status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversionStatusResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        clerkId:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        imageUrl:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - clerkId
+        - email
+        - name
+        - createdAt
+
+    SyncUserRequest:
+      type: object
+      properties:
+        clerkId:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        imageUrl:
+          type: string
+          nullable: true
+      required:
+        - clerkId
+        - email
+        - name
+
+    Plan:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        priceUsd:
+          type: number
+        conversionsPerMonth:
+          type: integer
+          description: -1 means unlimited
+        features:
+          type: array
+          items:
+            type: string
+        popular:
+          type: boolean
+      required:
+        - id
+        - name
+        - priceUsd
+        - conversionsPerMonth
+        - features
+        - popular
+
+    SubscriptionResponse:
+      type: object
+      properties:
+        subscription:
+          $ref: "#/components/schemas/Subscription"
+          nullable: true
+        conversionsUsedThisMonth:
+          type: integer
+        conversionsRemaining:
+          type: integer
+          description: -1 means unlimited
+      required:
+        - conversionsUsedThisMonth
+        - conversionsRemaining
+
+    Subscription:
+      type: object
+      properties:
+        id:
+          type: string
+        planId:
+          type: string
+        planName:
+          type: string
+        status:
+          type: string
+          enum: [active, cancelled, expired, pending]
+        currentPeriodStart:
+          type: string
+          format: date-time
+        currentPeriodEnd:
+          type: string
+          format: date-time
+        priceUsd:
+          type: number
+      required:
+        - id
+        - planId
+        - planName
+        - status
+        - currentPeriodStart
+        - currentPeriodEnd
+        - priceUsd
+
+    CheckoutRequest:
+      type: object
+      properties:
+        planId:
+          type: string
+      required:
+        - planId
+
+    CheckoutResponse:
+      type: object
+      properties:
+        redirectUrl:
+          type: string
+        orderTrackingId:
+          type: string
+      required:
+        - redirectUrl
+        - orderTrackingId
+
+    CallbackResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required:
+        - success
+        - message
+
+    CreateConversionRequest:
+      type: object
+      properties:
+        webUrl:
+          type: string
+          description: The web app URL to convert
+        appName:
+          type: string
+          description: Name of the resulting Android app
+        packageName:
+          type: string
+          description: Android package name (e.g. com.company.app)
+        versionName:
+          type: string
+          description: App version string (e.g. 1.0.0)
+        enableOffline:
+          type: boolean
+          description: Enable offline caching
+        enablePushNotifications:
+          type: boolean
+          description: Include push notification support
+        splashScreenColor:
+          type: string
+          description: Splash screen background color (hex)
+        themeColor:
+          type: string
+          description: App theme color (hex)
+      required:
+        - webUrl
+        - appName
+        - packageName
+
+    ConversionJob:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        webUrl:
+          type: string
+        appName:
+          type: string
+        packageName:
+          type: string
+        versionName:
+          type: string
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        apkDownloadUrl:
+          type: string
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+        enableOffline:
+          type: boolean
+        enablePushNotifications:
+          type: boolean
+        splashScreenColor:
+          type: string
+          nullable: true
+        themeColor:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - id
+        - userId
+        - webUrl
+        - appName
+        - packageName
+        - versionName
+        - status
+        - enableOffline
+        - enablePushNotifications
+        - createdAt
+
+    ConversionStatusResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+        apkDownloadUrl:
+          type: string
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - id
+        - status

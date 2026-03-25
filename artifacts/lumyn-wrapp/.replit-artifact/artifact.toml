@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Lumyn Wrapp"
+version = "1.0.0"
+id = "artifacts/lumyn-wrapp"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24146
+
+[services.development]
+run = "pnpm --filter @workspace/lumyn-wrapp run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/lumyn-wrapp", "run", "build" ]
+publicDir = "artifacts/lumyn-wrapp/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24146"
+BASE_PATH = "/"
